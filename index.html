@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Prime Radiant — An open-source hyperdimensional data visualization engine inspired by Foundation's Prime Radiant. 32,000 particles, helical connections, organic swarming. Built with Three.js.">
+<meta name="author" content="Víctor Estrugo">
+<meta property="og:title" content="Prime Radiant — Hyperdimensional Data Visualization">
+<meta property="og:description" content="An open-source visualization engine inspired by Foundation's Prime Radiant. 32K particles on interlocking tori with helical connections and organic flocking behavior.">
+<meta property="og:type" content="website">
+<title>Prime Radiant — Hyperdimensional Data Visualization</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=JetBrains+Mono:wght@300;400;500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#060402;overflow:hidden;font-family:'JetBrains Mono',monospace;color:rgba(218,175,90,.7);-webkit-font-smoothing:antialiased}
+canvas{position:fixed;top:0;left:0;z-index:1}
+.vig{position:fixed;inset:0;z-index:5;pointer-events:none;background:radial-gradient(ellipse at center,transparent 30%,rgba(6,4,2,.6) 100%)}
+
+#opening{position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse at center,#080604,#030201);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:opacity 4s cubic-bezier(.16,1,.3,1)}
+#opening.gone{opacity:0;pointer-events:none}
+.sigil{position:relative;width:160px;height:160px;display:flex;align-items:center;justify-content:center}
+.sr{position:absolute;border-radius:50%;border:1px solid rgba(218,170,70,.07)}
+.sr:nth-child(1){inset:-12px;animation:spin 18s linear infinite}
+.sr:nth-child(2){inset:12px;animation:spin 14s linear infinite reverse}
+.sr:nth-child(3){inset:30px;animation:spin 22s linear infinite}
+.sd{width:10px;height:10px;border-radius:50%;background:radial-gradient(circle,rgba(255,220,110,1),rgba(200,160,60,.3) 60%,transparent);box-shadow:0 0 50px rgba(218,170,70,.5),0 0 120px rgba(180,140,50,.12);animation:dp 3s ease-in-out infinite}
+.ot{margin-top:48px;font-family:'Cormorant Garamond',serif;font-weight:300;font-size:15px;letter-spacing:8px;text-transform:uppercase;color:rgba(218,170,70,.25);animation:tf 3.5s ease-in-out infinite}
+.os{margin-top:12px;font-size:9px;letter-spacing:4px;color:rgba(218,170,70,.12);text-transform:uppercase}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes dp{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.4);opacity:1}}
+@keyframes tf{0%,100%{opacity:.4}50%{opacity:.9}}
+
+.ui{position:fixed;z-index:20;pointer-events:none;opacity:0;transition:opacity 1.5s}.ui.v{opacity:1}.ui>*{pointer-events:auto}
+.tl-pos{top:24px;left:28px}.tr-pos{top:24px;right:28px;text-align:right}.bl-pos{bottom:20px;left:28px}.br-pos{bottom:20px;right:28px;text-align:right}
+h1{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:18px;letter-spacing:8px;text-transform:uppercase;color:rgba(218,170,70,.45);margin-bottom:3px}
+.sub{font-size:10px;letter-spacing:3px;color:rgba(218,170,70,.2);text-transform:uppercase}
+.st{font-size:10px;line-height:2;color:rgba(218,170,70,.3);letter-spacing:1px}.st b{font-weight:500;color:rgba(218,175,90,.6)}
+.eq{font-size:10px;line-height:2.2;color:rgba(218,170,70,.14);letter-spacing:1px}.eq em{font-style:normal;color:rgba(218,175,90,.3)}
+.hint{font-size:9px;color:rgba(218,170,70,.16);line-height:1.9;letter-spacing:1px}
+
+.fp{position:fixed;top:80px;left:24px;z-index:20;display:flex;flex-direction:column;gap:4px;opacity:0;transition:opacity 1.5s}.fp.v{opacity:1}
+.fb{background:rgba(12,9,4,.6);border:1px solid rgba(218,170,70,.06);border-radius:3px;padding:7px 14px;display:flex;align-items:center;gap:9px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(218,170,70,.35);cursor:pointer;transition:all .3s;backdrop-filter:blur(6px);white-space:nowrap}
+.fb:hover{border-color:rgba(218,170,70,.18);color:rgba(218,175,90,.65)}.fb.on{border-color:rgba(218,170,70,.3);color:rgba(218,175,90,.85);background:rgba(18,14,6,.85)}
+.fd{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.fr,.dbtn{margin-top:8px;background:none;border:1px solid rgba(218,170,70,.05);border-radius:3px;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(218,170,70,.18);cursor:pointer;transition:all .3s}
+.fr:hover,.dbtn:hover{color:rgba(218,170,70,.4);border-color:rgba(218,170,70,.12)}
+.dbtn{color:rgba(218,170,70,.3);border-color:rgba(180,150,60,.12)}
+.dbtn.run{color:rgba(200,180,80,.6);border-color:rgba(200,180,80,.2)}
+
+.dp{position:fixed;top:80px;right:24px;z-index:20;width:230px;background:rgba(12,9,4,.82);border:1px solid rgba(218,170,70,.07);border-radius:3px;backdrop-filter:blur(10px);padding:18px;opacity:0;transform:translateX(16px);transition:all .4s;pointer-events:none}
+.dp.v{opacity:1;transform:translateX(0);pointer-events:auto}
+.dpt{font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:rgba(218,175,90,.75);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(218,170,70,.07)}
+.dr{display:flex;justify-content:space-between;margin-bottom:8px;font-size:10px}.dk{color:rgba(218,170,70,.28);letter-spacing:1px;text-transform:uppercase}.dv{color:rgba(218,175,90,.7);font-weight:500}
+.dc{position:absolute;top:10px;right:14px;background:none;border:none;color:rgba(218,170,70,.22);cursor:pointer;font-size:16px;font-family:inherit}
+.tip{position:fixed;z-index:30;background:rgba(12,9,4,.92);border:1px solid rgba(218,170,70,.12);border-radius:3px;padding:11px 15px;font-size:10px;line-height:1.8;color:rgba(218,175,90,.6);pointer-events:none;opacity:0;transition:opacity .2s;backdrop-filter:blur(14px);max-width:210px}
+.tip .n{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:12px;color:rgba(218,175,90,.85);margin-bottom:4px;letter-spacing:2px;text-transform:uppercase}
+.tip em{font-style:normal;color:rgba(255,210,110,.7);font-weight:500}
+.credit{position:fixed;bottom:5px;left:50%;transform:translateX(-50%);z-index:20;font-size:8px;letter-spacing:2px;color:rgba(218,170,70,.12);text-transform:uppercase;pointer-events:auto}
+.credit a{color:rgba(218,170,70,.25);text-decoration:none;transition:color .3s}
+.credit a:hover{color:rgba(218,170,70,.5)}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="vig"></div>
+<div id="opening"><div class="sigil"><div class="sr"></div><div class="sr"></div><div class="sr"></div><div class="sd"></div></div><div class="ot">Touch to initiate</div><div class="os">Prime Radiant · Hyperdimensional Visualization</div></div>
+<div class="ui tl-pos" id="uTL"><h1>Prime Radiant</h1><div class="sub">Hyperdimensional data visualization</div></div>
+<div class="ui tr-pos" id="uTR"><div class="st">Particles: <b id="sP">0</b><br>Epoch: <b id="sE">12,067 GE</b></div></div>
+<div class="ui bl-pos" id="uBL"><div class="eq"><em>Ψ(t)</em> = Σ P(i,t)·W(i)·ε(t)<br><em>∂H/∂t</em> = -∇²Φ+λΨ(t)+<em>δ(Seldon)</em><br>P(F) = <em id="sPr">0.9847</em></div></div>
+<div class="ui br-pos" id="uBR"><div class="hint">Drag orbit · Right-click pan · Scroll zoom<br>Double-click focus</div></div>
+<div class="fp" id="fP"></div>
+<div class="dp" id="dP"><button class="dc" id="dC">×</button><div class="dpt" id="dT">—</div><div id="dM"></div></div>
+<div class="tip" id="tip"><div class="n" id="tN">—</div><div id="tC"></div></div>
+<div class="credit">Created by <a href="https://victorestrugo.com" target="_blank">Víctor Estrugo</a> · Inspired by Foundation · <a href="https://github.com/victorestrugo/prime-radiant" target="_blank">GitHub</a></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ===========================================================
+   PRIME RADIANT — Hyperdimensional Data Visualization Engine
+   
+   An open-source visualization inspired by the Prime Radiant
+   from Isaac Asimov's Foundation series (Apple TV+ adaptation).
+   
+   32,000 particles on interlocking tori with helical connections,
+   organic flocking behavior, and ceremonial opening animation.
+   
+   Created by Víctor Estrugo (victorestrugo.com)
+   Built with Three.js · MIT License
+   
+   Structure: 16 nodes on interlocking tori + helix,
+   connected by spiral paths. Particles swarm organically.
+   =========================================================== */
+
+const N=32000;
+let opened=false,deployT=-1,demoOn=false,demoT=0;
+
+const CL=[
+  {name:'Terminus prime',prob:.9847,pop:'4.2T',trend:'+0.003σ/yr'},
+  {name:'Trantor decay',prob:.2134,pop:'890B',trend:'-0.041σ/yr'},
+  {name:'Periphery wave',prob:.7623,pop:'1.1T',trend:'+0.012σ/yr'},
+  {name:'Trade nexus',prob:.8891,pop:'2.8T',trend:'+0.007σ/yr'},
+  {name:'Second foundation',prob:.9991,pop:'47',trend:'±0.000σ/yr'},
+  {name:'Mule deviation',prob:.0312,pop:'1',trend:'-0.891σ/yr'},
+  {name:'Seldon crisis IV',prob:.6754,pop:'18B',trend:'-0.023σ/yr'},
+  {name:'Encyclopedia',prob:.5500,pop:'120M',trend:'+0.001σ/yr'},
+  {name:'Gaia convergence',prob:.8120,pop:'1',trend:'+0.044σ/yr'},
+  {name:"Star's End",prob:.4400,pop:'3.2B',trend:'-0.008σ/yr'},
+  {name:'Anacreonic fork',prob:.7100,pop:'9.3B',trend:'+0.008σ/yr'},
+  {name:'Sayshell thread',prob:.6300,pop:'2.1B',trend:'-0.005σ/yr'},
+  {name:'Solarian echo',prob:.8800,pop:'1.2K',trend:'+0.021σ/yr'},
+  {name:'Helicon origin',prob:.9200,pop:'14B',trend:'+0.001σ/yr'},
+  {name:'Kalgan instability',prob:.3100,pop:'45B',trend:'-0.034σ/yr'},
+  {name:'Dahl undercity',prob:.5700,pop:'800M',trend:'+0.009σ/yr'},
+];
+const CCC=[];
+for(let i=0;i<16;i++){
+  const h=(i/16)*360;
+  /* Golden hues: hue 30-55 with variation */
+  const hue=30+Math.sin(i*1.2)*15;
+  const s=.5+Math.random()*.3;
+  const l=.5+Math.random()*.2;
+  /* HSL to approx RGB */
+  const a2=s*Math.min(l,1-l);
+  const f=n=>{const k=(n+hue/30)%12;return l-a2*Math.max(Math.min(k-3,9-k,1),-1)};
+  CCC.push([f(0),f(8),f(4)]);
+}
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.1,15000);
+camera.position.set(0,50,500);
+const ren=new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:true});
+ren.setSize(innerWidth,innerHeight);
+ren.setPixelRatio(Math.min(devicePixelRatio,2));
+ren.setClearColor(0x060402);
+
+/* ===========================================================
+   HYPERDIMENSIONAL NODE PLACEMENT
+   Nodes positioned on interlocking tori and helices,
+   as if a 4D structure projected into 3D
+   =========================================================== */
+const CC=[];
+/* Two interlocking tori + helix */
+const R1=150, r1=70;  /* outer torus */
+const R2=120, r2=90;  /* inner torus, different plane */
+for(let i=0;i<16;i++){
+  let x,y,z;
+  if(i<6){
+    /* Torus 1 */
+    const th=i/6*Math.PI*2+Math.random()*.3;
+    const ph=((i*2.5)%6)/6*Math.PI*2;
+    x=(R1+r1*Math.cos(ph))*Math.cos(th);
+    y=(R1+r1*Math.cos(ph))*Math.sin(th)*.6; /* squash slightly */
+    z=r1*Math.sin(ph);
+  } else if(i<11){
+    /* Torus 2 — rotated 90° */
+    const th=(i-6)/5*Math.PI*2+Math.random()*.3;
+    const ph=((i*3.1)%5)/5*Math.PI*2;
+    x=r2*Math.sin(ph);
+    y=(R2+r2*Math.cos(ph))*Math.cos(th);
+    z=(R2+r2*Math.cos(ph))*Math.sin(th)*.6;
+  } else {
+    /* Helix through center */
+    const t=(i-11)/5;
+    const helixR=60+t*40;
+    const helixTh=t*Math.PI*3;
+    x=helixR*Math.cos(helixTh);
+    y=-120+t*240; /* vertical span */
+    z=helixR*Math.sin(helixTh);
+  }
+  CC.push(new THREE.Vector3(x,y,z));
+}
+
+/* ===========================================================
+   CONNECTIONS: Spiral/helical paths between nodes
+   Not straight lines — curves that orbit through space
+   =========================================================== */
+const branches=[];
+/* Connect nodes that are within range, plus some long-range */
+for(let a=0;a<16;a++){
+  for(let b=a+1;b<16;b++){
+    const d=CC[a].distanceTo(CC[b]);
+    if(d<280||(d<400&&Math.random()<.3)){
+      branches.push({from:CC[a],to:CC[b],ci:a,ci2:b});
+    }
+  }
+}
+/* Ensure connectivity: at least 2 connections per node */
+for(let a=0;a<16;a++){
+  const conns=branches.filter(b=>b.ci===a||b.ci2===a);
+  if(conns.length<2){
+    /* Connect to nearest unconnected */
+    const dists=CC.map((c,i)=>({i,d:c.distanceTo(CC[a])})).filter(x=>x.i!==a).sort((a,b)=>a.d-b.d);
+    for(const dd of dists){
+      if(!branches.some(b=>(b.ci===a&&b.ci2===dd.i)||(b.ci===dd.i&&b.ci2===a))){
+        branches.push({from:CC[a],to:CC[dd.i],ci:a,ci2:dd.i});
+        break;
+      }
+    }
+  }
+}
+
+/* Generate helical waypoints for each branch — TIGHT helix, clearly visible */
+function helicalPath(from,to,pts){
+  const dir=new THREE.Vector3().subVectors(to,from);
+  const len=dir.length();dir.normalize();
+  const up=new THREE.Vector3(0,1,0);
+  const perp1=new THREE.Vector3().crossVectors(dir,up);
+  if(perp1.length()<.01)perp1.set(1,0,0);perp1.normalize();
+  const perp2=new THREE.Vector3().crossVectors(dir,perp1).normalize();
+  const helixR=len*.04+Math.random()*len*.03; /* TIGHTER helix */
+  const turns=1.5+Math.random()*1.5;
+  const result=[];
+  for(let s=0;s<pts;s++){
+    const t=s/(pts-1);
+    const angle=t*Math.PI*2*turns;
+    result.push({
+      x:from.x+dir.x*t*len+perp1.x*Math.cos(angle)*helixR+perp2.x*Math.sin(angle)*helixR,
+      y:from.y+dir.y*t*len+perp1.y*Math.cos(angle)*helixR+perp2.y*Math.sin(angle)*helixR,
+      z:from.z+dir.z*t*len+perp1.z*Math.cos(angle)*helixR+perp2.z*Math.sin(angle)*helixR,
+    });
+  }
+  return result;
+}
+
+/* Pre-compute paths for travelers */
+const branchPaths=branches.map(b=>helicalPath(b.from,b.to,45));
+
+/* ===========================================================
+   PARTICLES
+   =========================================================== */
+const P=new Float32Array(N*3),V=new Float32Array(N*3),SZ=new Float32Array(N);
+const COL=new Float32Array(N*3),ALP=new Float32Array(N);
+const TYP=new Uint8Array(N),CLU=new Int8Array(N).fill(-1);
+const HOME=[];const HSTR=new Float32Array(N),SPD=new Float32Array(N);
+const tBranch=new Int16Array(N).fill(-1),tT=new Float32Array(N),tDir=new Int8Array(N),tSpd=new Float32Array(N);
+let ix=0;
+
+/* NODE particles: 5500 — dense bright cores, unmistakable */
+const nPC=Math.floor(5500/16);
+for(let ci=0;ci<16;ci++){
+  const c=CC[ci],co=CCC[ci];
+  for(let j=0;j<nPC;j++){
+    const i=ix++;TYP[i]=0;CLU[i]=ci;
+    const r=(Math.random()**1.2)*18; /* TIGHT — very concentrated */
+    const th=Math.random()*6.283,ph=Math.acos(2*Math.random()-1);
+    P[i*3]=c.x+r*Math.sin(ph)*Math.cos(th);P[i*3+1]=c.y+r*Math.sin(ph)*Math.sin(th);P[i*3+2]=c.z+r*Math.cos(ph);
+    HOME.push(new THREE.Vector3(P[i*3],P[i*3+1],P[i*3+2]));
+    const roll=Math.random();
+    SZ[i]=roll>.90?4+Math.random()*3.5:roll>.60?2+Math.random()*2:.7+Math.random()*1.3;
+    /* VERY bright — floor .8 */
+    const br=.8+Math.random()*.2;
+    COL[i*3]=Math.min(1,co[0]*br*1.3);COL[i*3+1]=Math.min(1,co[1]*br*1.1);COL[i*3+2]=co[2]*br*.7;
+    ALP[i]=1;V[i*3]=(Math.random()-.5)*1.5;V[i*3+1]=(Math.random()-.5)*1.5;V[i*3+2]=(Math.random()-.5)*1.5;
+    HSTR[i]=.03+Math.random()*.04; /* stronger home pull = stays compact */
+    SPD[i]=1+Math.random()*1.5;
+  }
+}
+
+/* HALO: 2500 — soft outer glow, dimmer than core */
+const hPC=Math.floor(2500/16);
+for(let ci=0;ci<16;ci++){
+  const c=CC[ci],co=CCC[ci];
+  for(let j=0;j<hPC;j++){
+    const i=ix++;TYP[i]=1;CLU[i]=ci;
+    const r=20+Math.random()*40;
+    const th=Math.random()*6.283,ph=Math.acos(2*Math.random()-1);
+    P[i*3]=c.x+r*Math.sin(ph)*Math.cos(th);P[i*3+1]=c.y+r*Math.sin(ph)*Math.sin(th);P[i*3+2]=c.z+r*Math.cos(ph);
+    HOME.push(new THREE.Vector3(P[i*3],P[i*3+1],P[i*3+2]));
+    SZ[i]=.3+Math.random()*.8;
+    const br=.3+Math.random()*.35;
+    COL[i*3]=co[0]*br;COL[i*3+1]=co[1]*br*.85;COL[i*3+2]=co[2]*br*.5;
+    ALP[i]=1;V[i*3]=(Math.random()-.5);V[i*3+1]=(Math.random()-.5);V[i*3+2]=(Math.random()-.5);
+    HSTR[i]=.012+Math.random()*.015;SPD[i]=.6+Math.random()*1;
+  }
+}
+
+/* TRAVELERS: 10000 — BRIGHT visible rivers along helical paths */
+const N_TRAV=10000;
+for(let j=0;j<N_TRAV;j++){
+  const i=ix++;TYP[i]=2;
+  const bi=Math.floor(Math.random()*branches.length);
+  tBranch[i]=bi;tT[i]=Math.random();tDir[i]=Math.random()<.5?1:-1;
+  tSpd[i]=.003+Math.random()*.006;
+  const path=branchPaths[bi];
+  const pi2=Math.floor(tT[i]*(path.length-1));
+  const wp=path[Math.min(pi2,path.length-1)];
+  P[i*3]=wp.x+(Math.random()-.5)*3;P[i*3+1]=wp.y+(Math.random()-.5)*3;P[i*3+2]=wp.z+(Math.random()-.5)*3;
+  HOME.push(new THREE.Vector3(P[i*3],P[i*3+1],P[i*3+2]));
+  SZ[i]=.6+Math.random()*2.2; /* BIGGER */
+  const b=branches[bi];
+  const co=CCC[Math.random()<.5?b.ci:b.ci2];
+  /* MUCH brighter — floor 0.55, ceiling 1.0 */
+  const tbr=.55+Math.random()*.45;
+  COL[i*3]=Math.min(1,co[0]*tbr*1.5);COL[i*3+1]=Math.min(1,co[1]*tbr*1.3);COL[i*3+2]=co[2]*tbr*.8;
+  ALP[i]=1;HSTR[i]=0;SPD[i]=.5+Math.random()*1;
+}
+
+/* BRANCH STATIC: 3000 — visible backbone glow along paths */
+for(let j=0;j<3000&&ix<N-7000;j++){
+  const i=ix++;TYP[i]=3;
+  const bi=Math.floor(Math.random()*branches.length);
+  const path=branchPaths[bi];
+  const wp=path[Math.floor(Math.random()*path.length)];
+  P[i*3]=wp.x+(Math.random()-.5)*4;P[i*3+1]=wp.y+(Math.random()-.5)*4;P[i*3+2]=wp.z+(Math.random()-.5)*4;
+  HOME.push(new THREE.Vector3(P[i*3],P[i*3+1],P[i*3+2]));
+  SZ[i]=.3+Math.random()*.8;
+  const co=CCC[branches[bi].ci];
+  const sbr=.3+Math.random()*.3;
+  COL[i*3]=co[0]*sbr*1.2;COL[i*3+1]=co[1]*sbr;COL[i*3+2]=co[2]*sbr*.55;
+  ALP[i]=1;V[i*3]=(Math.random()-.5)*.3;V[i*3+1]=(Math.random()-.5)*.3;V[i*3+2]=(Math.random()-.5)*.3;
+  HSTR[i]=.008;SPD[i]=.3;
+}
+
+/* DUST */
+while(ix<N-6000){
+  const i=ix++;TYP[i]=4;
+  P[i*3]=(Math.random()-.5)*2000;P[i*3+1]=(Math.random()-.5)*2000;P[i*3+2]=(Math.random()-.5)*2000;
+  HOME.push(new THREE.Vector3(P[i*3],P[i*3+1],P[i*3+2]));
+  SZ[i]=.08+Math.random()*.35;
+  const dbr=.08+Math.random()*.15;
+  COL[i*3]=.85*dbr;COL[i*3+1]=.68*dbr;COL[i*3+2]=.3*dbr;
+  ALP[i]=1;HSTR[i]=.001;SPD[i]=.12;
+}
+
+/* RESERVE: 6000 for demo */
+while(ix<N){
+  const i=ix++;TYP[i]=5;
+  P[i*3]=0;P[i*3+1]=-9999;P[i*3+2]=0;
+  HOME.push(new THREE.Vector3(0,-9999,0));
+  SZ[i]=.4+Math.random()*1.5;COL[i*3]=.7;COL[i*3+1]=.55;COL[i*3+2]=.2;ALP[i]=0;SPD[i]=1;
+  tBranch[i]=-1;tT[i]=0;tDir[i]=1;tSpd[i]=.004;
+}
+
+/* Geometry */
+const geom=new THREE.BufferGeometry();
+const pA=new THREE.BufferAttribute(P,3);
+const sA=new THREE.BufferAttribute(new Float32Array(N),1);
+const cA=new THREE.BufferAttribute(COL,3);
+const aA=new THREE.BufferAttribute(ALP,1);
+geom.setAttribute('position',pA);geom.setAttribute('size',sA);
+geom.setAttribute('color',cA);geom.setAttribute('alpha',aA);
+
+const mat=new THREE.ShaderMaterial({
+  vertexShader:`
+    attribute float size;attribute vec3 color;attribute float alpha;
+    varying vec3 vC;varying float vA,vS;
+    void main(){
+      vC=color;vA=alpha;vS=size;
+      vec4 mv=modelViewMatrix*vec4(position,1.0);
+      gl_PointSize=size*(500.0/-mv.z);
+      gl_Position=projectionMatrix*mv;
+      vA*=clamp(1.0-(-mv.z)/8000.0,0.35,1.0);
+    }`,
+  fragmentShader:`
+    varying vec3 vC;varying float vA,vS;
+    void main(){
+      float d=length(gl_PointCoord-.5);
+      if(d>.5)discard;
+      float sharp=mix(10.0,3.0,clamp(vS/8.0,0.0,1.0));
+      float glow=exp(-d*d*sharp);
+      float core=smoothstep(.07,.0,d)*clamp(vS/3.0,0.0,1.0);
+      float haze=smoothstep(.5,.1,d)*.2*clamp(vS/5.0,0.0,1.0);
+      vec3 c=vC*glow+vec3(1.,.95,.82)*core*.6+vC*haze;
+      float a=(glow+haze)*vA;
+      a=min(a,0.85);
+      gl_FragColor=vec4(c,a);
+    }`,
+  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+});
+const pts=new THREE.Points(geom,mat);pts.visible=false;scene.add(pts);
+
+for(let r=0;r<2;r++){
+  const rad=180+r*70;
+  const rg=new THREE.RingGeometry(rad-.2,rad+.2,128);
+  const rm=new THREE.MeshBasicMaterial({color:0x6a5520,transparent:true,opacity:.015,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+  const ring=new THREE.Mesh(rg,rm);ring.rotation.x=Math.PI/3+r*.5;ring.rotation.z=r*.7;scene.add(ring);
+}
+
+/* ---- OPENING ---- */
+const openEl=document.getElementById('opening');
+openEl.addEventListener('click',go);openEl.addEventListener('touchstart',go,{passive:true});
+function go(){
+  if(opened)return;opened=true;
+  setTimeout(()=>{openEl.classList.add('gone');pts.visible=true;startDeploy()},800);
+  setTimeout(()=>openEl.style.display='none',6000);
+  ['uTL','uTR','fP','uBL','uBR'].forEach((id,i)=>setTimeout(()=>document.getElementById(id).classList.add('v'),5000+i*300));
+}
+function startDeploy(){
+  const ls=sA.array;for(let i=0;i<N;i++)ls[i]=TYP[i]===5?0:SZ[i];sA.needsUpdate=true;
+  const lp=pA.array;for(let i=0;i<N;i++){if(TYP[i]===5)continue;lp[i*3]=(Math.random()-.5)*3;lp[i*3+1]=(Math.random()-.5)*3;lp[i*3+2]=(Math.random()-.5)*3}
+  pA.needsUpdate=true;deployT=0;
+}
+
+/* ---- CAMERA ---- */
+let drag=false,panning=false,pmx=0,pmy=0;
+let theta=.2,phi=Math.PI/2.2,tTh=.2,tPh=Math.PI/2.2;
+let camR=500,tCR=500,autoR=true;
+let focCl=-1,focTgt=null;
+const panOff=new THREE.Vector3(),tPanOff=new THREE.Vector3();
+let pinchDist=0;
+
+document.addEventListener('mousedown',e=>{if(e.target.tagName!=='CANVAS')return;autoR=false;pmx=e.clientX;pmy=e.clientY;if(e.button===2||e.shiftKey){panning=true;e.preventDefault()}else drag=true});
+document.addEventListener('mouseup',()=>{drag=false;panning=false});
+document.addEventListener('contextmenu',e=>{if(e.target.tagName==='CANVAS')e.preventDefault()});
+document.addEventListener('mousemove',e=>{
+  const dx=e.clientX-pmx,dy=e.clientY-pmy;pmx=e.clientX;pmy=e.clientY;
+  if(panning){const ps=camR*.0012;const r=new THREE.Vector3,u=new THREE.Vector3;camera.getWorldDirection(u);r.crossVectors(u,camera.up).normalize();u.crossVectors(r,u).normalize();tPanOff.addScaledVector(r,-dx*ps);tPanOff.addScaledVector(u,dy*ps)}
+  else if(drag){tTh+=dx*.004;tPh=Math.max(.15,Math.min(Math.PI-.15,tPh-dy*.004))}
+});
+document.addEventListener('wheel',e=>{tCR=Math.max(150,Math.min(2200,tCR+e.deltaY*.6))},{passive:true});
+document.addEventListener('touchstart',e=>{if(e.target.tagName!=='CANVAS')return;autoR=false;if(e.touches.length===1){drag=true;pmx=e.touches[0].clientX;pmy=e.touches[0].clientY}if(e.touches.length===2){drag=false;pinchDist=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);pmx=(e.touches[0].clientX+e.touches[1].clientX)/2;pmy=(e.touches[0].clientY+e.touches[1].clientY)/2}},{passive:true});
+document.addEventListener('touchmove',e=>{if(e.touches.length===2){const d=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);tCR=Math.max(150,Math.min(2200,tCR-(d-pinchDist)*1.5));pinchDist=d;const cx=(e.touches[0].clientX+e.touches[1].clientX)/2,cy=(e.touches[0].clientY+e.touches[1].clientY)/2;const ps=camR*.0015;const r=new THREE.Vector3,u=new THREE.Vector3;camera.getWorldDirection(u);r.crossVectors(u,camera.up).normalize();u.crossVectors(r,u).normalize();tPanOff.addScaledVector(r,-(cx-pmx)*ps);tPanOff.addScaledVector(u,(cy-pmy)*ps);pmx=cx;pmy=cy;drag=false}else if(drag&&e.touches.length===1){const dx=e.touches[0].clientX-pmx,dy=e.touches[0].clientY-pmy;tTh+=dx*.004;tPh=Math.max(.15,Math.min(Math.PI-.15,tPh-dy*.004));pmx=e.touches[0].clientX;pmy=e.touches[0].clientY}},{passive:true});
+document.addEventListener('touchend',e=>{if(e.touches.length===0){drag=false;panning=false}});
+
+/* ---- FILTERS ---- */
+let actF=new Set();
+const fPel=document.getElementById('fP');
+CL.forEach((cl,ci)=>{
+  const b=document.createElement('button');b.className='fb';
+  const c=CCC[ci];
+  b.innerHTML=`<span class="fd" style="background:rgb(${c[0]*255|0},${c[1]*190|0},${c[2]*160|0})"></span>${cl.name}`;
+  b.onclick=()=>{if(actF.has(ci)){actF.delete(ci);b.classList.remove('on');if(!actF.size)unzoom()}else{actF.add(ci);b.classList.add('on')}if(actF.size===1)zoomTo([...actF][0]);else if(!actF.size)unzoom();updVis()};
+  fPel.appendChild(b);
+});
+const rb=document.createElement('button');rb.className='fr';rb.textContent='Reset';
+rb.onclick=()=>{actF.clear();document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));unzoom();updVis()};
+fPel.appendChild(rb);
+const dbtn=document.createElement('button');dbtn.className='dbtn';dbtn.textContent='▶ Growth demo';
+dbtn.onclick=startDemo;fPel.appendChild(dbtn);
+
+function zoomTo(ci){focCl=ci;focTgt=CC[ci].clone();tCR=280;showPan(ci)}
+function unzoom(){focCl=-1;focTgt=null;tCR=500;tPanOff.set(0,0,0);hidePan()}
+function updVis(){
+  for(let i=0;i<N;i++){
+    if(TYP[i]===5){ALP[i]=demoOn&&demoAssign[i]<=demoGrowHead?1:0;continue}
+    let v=true;
+    if(actF.size&&CLU[i]>=0&&!actF.has(CLU[i]))v=false;
+    ALP[i]=v?1:(TYP[i]===4?.3:.005);
+  }
+  aA.needsUpdate=true;
+  document.getElementById('sP').textContent=Array.from(ALP).reduce((s,a)=>s+(a>.3?1:0),0).toLocaleString();
+}
+function showPan(ci){document.getElementById('dT').textContent=CL[ci].name;document.getElementById('dM').innerHTML=`<div class="dr"><span class="dk">Prob</span><span class="dv">${CL[ci].prob.toFixed(4)}</span></div><div class="dr"><span class="dk">Pop</span><span class="dv">${CL[ci].pop}</span></div><div class="dr"><span class="dk">Drift</span><span class="dv">${CL[ci].trend}</span></div>`;document.getElementById('dP').classList.add('v')}
+function hidePan(){document.getElementById('dP').classList.remove('v')}
+document.getElementById('dC').onclick=()=>{hidePan();actF.clear();document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));unzoom();updVis()};
+
+/* Hover */
+const rc=new THREE.Raycaster();rc.params.Points.threshold=8;const ms=new THREE.Vector2(),tipE=document.getElementById('tip');
+document.addEventListener('mousemove',e=>{if(e.target!==ren.domElement||!opened)return;ms.x=(e.clientX/innerWidth)*2-1;ms.y=-(e.clientY/innerHeight)*2+1;rc.setFromCamera(ms,camera);const h=rc.intersectObject(pts);if(h.length&&TYP[h[0].index]<=1&&ALP[h[0].index]>.5&&CLU[h[0].index]>=0){const ci=CLU[h[0].index];document.getElementById('tN').textContent=CL[ci].name;document.getElementById('tC').innerHTML=`Prob: <em>${CL[ci].prob.toFixed(4)}</em><br>Pop: <em>${CL[ci].pop}</em><br>Drift: <em>${CL[ci].trend}</em>`;tipE.style.opacity=1;tipE.style.left=(e.clientX+14)+'px';tipE.style.top=(e.clientY-16)+'px';return}tipE.style.opacity=0});
+ren.domElement.addEventListener('dblclick',e=>{ms.x=(e.clientX/innerWidth)*2-1;ms.y=-(e.clientY/innerHeight)*2+1;rc.setFromCamera(ms,camera);const h=rc.intersectObject(pts);if(h.length&&TYP[h[0].index]<=1&&CLU[h[0].index]>=0){const ci=CLU[h[0].index];actF.clear();actF.add(ci);document.querySelectorAll('.fb').forEach((b,j)=>b.classList.toggle('on',j===ci));zoomTo(ci);updVis()}});
+document.getElementById('sP').textContent=(N-6000).toLocaleString();updVis();
+
+/* ---- DEMO: Multi-gen growth with camera follow ---- */
+const demoAssign=new Int16Array(N).fill(-1);
+let demoGrowHead=0;
+const demoWP=[];/* waypoints */
+let demoSrc=-1;
+const demoCamTarget=new THREE.Vector3();
+
+function startDemo(){
+  if(demoOn)return;demoOn=true;demoT=0;demoGrowHead=0;
+  dbtn.classList.add('run');dbtn.textContent='Growing...';
+  demoSrc=Math.floor(Math.random()*16);
+  const src=CC[demoSrc];const sv=src.clone();
+  demoWP.length=0;
+  
+  function addCurve(from,dir,len,pts){
+    const up=new THREE.Vector3(0,1,0);
+    const p1=new THREE.Vector3().crossVectors(dir,up);if(p1.length()<.01)p1.set(1,0,0);p1.normalize();
+    const p2=new THREE.Vector3().crossVectors(dir,p1).normalize();
+    const hR=len*.1;const turns=1+Math.random();
+    const res=[];
+    for(let s=0;s<pts;s++){
+      const t=s/(pts-1);const a=t*Math.PI*2*turns;
+      res.push({x:from.x+dir.x*t*len+p1.x*Math.cos(a)*hR+p2.x*Math.sin(a)*hR,y:from.y+dir.y*t*len+p1.y*Math.cos(a)*hR+p2.y*Math.sin(a)*hR,z:from.z+dir.z*t*len+p1.z*Math.cos(a)*hR+p2.z*Math.sin(a)*hR});
+    }
+    return res;
+  }
+  
+  const d1=new THREE.Vector3((Math.random()-.5),(Math.random()-.5),(Math.random()-.5)).normalize();
+  const d2=d1.clone().negate().add(new THREE.Vector3((Math.random()-.5)*.4,(Math.random()-.5)*.4,(Math.random()-.5)*.4)).normalize();
+  
+  /* Gen1: 2 branches */
+  const g1a=addCurve(sv,d1,130,25);
+  const g1b=addCurve(sv,d2,100,20);
+  demoWP.push(...g1a,...g1b);
+  
+  /* Gen2: 3 sub from g1a end */
+  const eA=g1a[g1a.length-1];const eAv=new THREE.Vector3(eA.x,eA.y,eA.z);
+  const g2s=[];
+  for(let b=0;b<3;b++){
+    const bd=d1.clone().add(new THREE.Vector3((Math.random()-.5)*.9,(Math.random()-.5)*.9,(Math.random()-.5)*.9)).normalize();
+    const g2=addCurve(eAv,bd,80,18);g2s.push(g2);demoWP.push(...g2);
+  }
+  
+  /* Gen3: 1 branch from g2[0] end → big node */
+  const eG=g2s[0][g2s[0].length-1];const eGv=new THREE.Vector3(eG.x,eG.y,eG.z);
+  const fd=new THREE.Vector3((Math.random()-.5),(Math.random()-.5),(Math.random()-.5)).normalize();
+  const g3=addCurve(eGv,fd,60,14);demoWP.push(...g3);
+  
+  /* Big final node */
+  const fEnd=g3[g3.length-1];
+  for(let n=0;n<25;n++){demoWP.push({x:fEnd.x+(Math.random()-.5)*30,y:fEnd.y+(Math.random()-.5)*30,z:fEnd.z+(Math.random()-.5)*30})}
+  
+  /* Assign 6000 reserve */
+  const co=CCC[demoSrc];let ri=N-6000;
+  const totalWP=demoWP.length;
+  for(let seg=0;seg<totalWP&&ri<N;seg++){
+    const wp=demoWP[seg];
+    const cnt=seg>=totalWP-25?80:40; /* more for final node */
+    for(let j=0;j<cnt&&ri<N;j++){
+      const i=ri++;demoAssign[i]=seg;
+      P[i*3]=sv.x+(Math.random()-.5)*8;P[i*3+1]=sv.y+(Math.random()-.5)*8;P[i*3+2]=sv.z+(Math.random()-.5)*8;
+      const br=.5+Math.random()*.5;const bm=seg>=totalWP-25?1.3:1.1;
+      COL[i*3]=Math.min(1,co[0]*br*bm);COL[i*3+1]=co[1]*br*(bm*.8);COL[i*3+2]=co[2]*br*.6;
+      /* Same sizes as normal particles — no oversized */
+      SZ[i]=seg>=totalWP-25?.8+Math.random()*2:.4+Math.random()*1.5;
+      sA.array[i]=SZ[i];ALP[i]=0;V[i*3]=0;V[i*3+1]=0;V[i*3+2]=0;
+    }
+  }
+  cA.needsUpdate=true;sA.needsUpdate=true;aA.needsUpdate=true;
+  
+  /* Camera follows growth */
+  demoCamTarget.copy(sv);
+  autoR=false;
+}
+
+/* ===========================================================
+   ANIMATION
+   =========================================================== */
+let time=0;const lookAtV=new THREE.Vector3(0,0,0);
+
+function anim(){
+  requestAnimationFrame(anim);time+=.002;
+
+  if(deployT>=0&&deployT<1){
+    deployT=Math.min(1,deployT+.001);
+    const ease=1-Math.pow(1-deployT,2.5);
+    const lp=pA.array;
+    for(let i=0;i<N;i++){if(TYP[i]===5)continue;const hp=HOME[i];lp[i*3]=hp.x*ease;lp[i*3+1]=hp.y*ease;lp[i*3+2]=hp.z*ease}
+    pA.needsUpdate=true;
+  }
+
+  if(!opened){ren.render(scene,camera);return}
+
+  /* Camera */
+  if(autoR)tTh+=.0004;
+  theta+=(tTh-theta)*.06;phi+=(tPh-phi)*.06;
+  tCR=Math.max(150,Math.min(2200,tCR));camR+=(tCR-camR)*.06;
+  panOff.lerp(tPanOff,.08);
+  
+  /* If demo is running, smoothly track the growth front */
+  let cen;
+  if(demoOn&&demoWP.length){
+    const headIdx=Math.min(demoGrowHead,demoWP.length-1);
+    const wp=demoWP[headIdx];
+    demoCamTarget.lerp(new THREE.Vector3(wp.x,wp.y,wp.z),.02);
+    cen=demoCamTarget;
+  } else {
+    cen=focTgt?focTgt.clone().add(panOff):(new THREE.Vector3()).add(panOff);
+  }
+  lookAtV.lerp(cen,.08);
+  camera.position.x=lookAtV.x+camR*Math.sin(phi)*Math.cos(theta);
+  camera.position.y=lookAtV.y+camR*Math.cos(phi);
+  camera.position.z=lookAtV.z+camR*Math.sin(phi)*Math.sin(theta);
+  camera.lookAt(lookAtV);
+
+  if(deployT>=1){
+    const lp=pA.array;
+    for(let i=0;i<N;i++){
+      if(ALP[i]<.01)continue;
+      const t2=TYP[i];
+
+      if(t2===2){
+        const bi=tBranch[i];
+        if(bi>=0&&bi<branchPaths.length){
+          const path=branchPaths[bi];
+          tT[i]+=tSpd[i]*tDir[i];
+          if(tT[i]>1){tT[i]=1;tDir[i]=-1;if(Math.random()<.3){tBranch[i]=Math.floor(Math.random()*branchPaths.length);tT[i]=0;tDir[i]=1}}
+          if(tT[i]<0){tT[i]=0;tDir[i]=1;if(Math.random()<.3){tBranch[i]=Math.floor(Math.random()*branchPaths.length);tT[i]=1;tDir[i]=-1}}
+          const cp=branchPaths[tBranch[i]];
+          const idx=Math.min(Math.floor(tT[i]*(cp.length-1)),cp.length-1);
+          const wp=cp[idx];
+          /* TIGHT scatter — particles hug the path, forming a visible river */
+          const sc=1.5+Math.sin(time*2+i*.1)*1;
+          lp[i*3]=wp.x+Math.sin(time*1.5+i*.2)*sc;
+          lp[i*3+1]=wp.y+Math.cos(time*1.1+i*.15)*sc;
+          lp[i*3+2]=wp.z+Math.sin(time*1.3+i*.18)*sc;
+        }
+      } else if(t2===5&&demoOn){
+        const seg=demoAssign[i];
+        if(seg>=0&&seg<=demoGrowHead){
+          if(ALP[i]<.5){ALP[i]=1;aA.needsUpdate=true}
+          const wp=demoWP[seg];
+          const dx=wp.x-lp[i*3],dy=wp.y-lp[i*3+1],dz=wp.z-lp[i*3+2];
+          const dist=Math.sqrt(dx*dx+dy*dy+dz*dz)||1;
+          const pull=dist>8?.08:.025;
+          V[i*3]+=dx/dist*pull*SPD[i];V[i*3+1]+=dy/dist*pull*SPD[i];V[i*3+2]+=dz/dist*pull*SPD[i];
+          V[i*3]+=Math.sin(time*2.5+i*.3)*.018;V[i*3+1]+=Math.cos(time*2+i*.25)*.018;V[i*3+2]+=Math.sin(time*1.8+i*.35)*.018;
+          V[i*3]*=.97;V[i*3+1]*=.97;V[i*3+2]*=.97;
+          lp[i*3]+=V[i*3];lp[i*3+1]+=V[i*3+1];lp[i*3+2]+=V[i*3+2];
+        }
+      } else if(t2<=1||t2===3){
+        const hx=HOME[i].x,hy=HOME[i].y,hz=HOME[i].z;
+        let vx=V[i*3],vy=V[i*3+1],vz=V[i*3+2];
+        const spd=SPD[i],h=HSTR[i];
+        vx+=(hx-lp[i*3])*h*spd;vy+=(hy-lp[i*3+1])*h*spd;vz+=(hz-lp[i*3+2])*h*spd;
+        const sw=.03*spd;const p1=time*2.5+i*.17,p2=time*1.8+i*.13,p3=time*2.1+i*.19;
+        vx+=Math.sin(p1)*sw;vy+=Math.cos(p2)*sw;vz+=Math.sin(p3)*sw;
+        vx*=.982;vy*=.982;vz*=.982;
+        const v2=vx*vx+vy*vy+vz*vz;const mx=2.5*spd;
+        if(v2>mx*mx){const s=mx/Math.sqrt(v2);vx*=s;vy*=s;vz*=s}
+        V[i*3]=vx;V[i*3+1]=vy;V[i*3+2]=vz;
+        lp[i*3]+=vx;lp[i*3+1]+=vy;lp[i*3+2]+=vz;
+      }
+    }
+    pA.needsUpdate=true;
+    const ls=sA.array;
+    for(let i=0;i<N;i++){if(ALP[i]<.01||TYP[i]===4)continue;ls[i]=SZ[i]+Math.sin(time*(.4+(i%17)*.08)+i*.4)*SZ[i]*.06}
+    sA.needsUpdate=true;
+  }
+
+  if(demoOn){
+    demoT+=.0005;
+    demoGrowHead=Math.floor(demoT*demoWP.length*1.1);
+    if(demoGrowHead>=demoWP.length){
+      demoGrowHead=demoWP.length;
+      if(demoT>1.2){demoOn=false;dbtn.classList.remove('run');dbtn.textContent='▶ Growth demo';autoR=true}
+    }
+    updVis();
+  }
+
+  document.getElementById('sPr').textContent=(.9847+Math.sin(time*.15)*.0012).toFixed(4);
+  ren.render(scene,camera);
+}
+anim();
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>
